@@ -1,0 +1,9 @@
+project:
+  output-dir: _docs
+
+website:
+  title: "zeroqaret"
+  site-url: "https://bengsoon.github.io/zeroqaret"
+  description: "Zero Shot QA Retriever"
+  repo-branch: main
+  repo-url: "https://github.com/bengsoon/zeroqaret"
