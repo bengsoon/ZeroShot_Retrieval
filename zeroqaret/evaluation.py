@@ -9,7 +9,7 @@ import os
 from pathlib import Path
 from fastcore.basics import patch_to, patch
 
-from .helper import setup_mlflow
+from .helper import *
 from .dataset import BEIRDataset, our_list as eval_list
 
 from getpass import getpass

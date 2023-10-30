@@ -28,6 +28,7 @@ from tqdm import tqdm
 
 # %% ../nbs/04_questions.ipynb 6
 from langchain.llms import Ollama
+from langchain.embeddings import OllamaEmbeddings
 from langchain.callbacks.manager import CallbackManager
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler 
 from langchain.schema import OutputParserException
