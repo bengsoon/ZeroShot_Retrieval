@@ -11,7 +11,7 @@ from fastcore.basics import patch_to, patch
 from typing import Union, List
 
 from .dataset import BEIRDataset, our_list as eval_list
-from .helper import get_today
+from .helper import get_today, create_header
 
 import pandas as pd
 
@@ -362,20 +362,6 @@ Answer:
 
 # %% ../nbs/04_questions.ipynb 57
 @patch_to(QuestionGenerator)
-def create_header(self,
-                  msg: str, # message on the header
-                 ) -> str:
-    """ Creates a simple ASCII header """
-    
-    header = "   \n" + "".center(100, "*")
-    header += "   \n" + "                                                                                        ".center(100, "*")
-    header += "   \n" + f"                                    {msg}                                    ".center(100, "*")
-    header += "   \n" + "                                                                                        ".center(100, "*")
-    header += "   \n" + "".center(100, "*")
-    
-    return header
-
-@patch_to(QuestionGenerator)
 def generate_questions_corpus(self,
                               dataset_name: str, # name of the dataset
                               corpus: List,
@@ -432,7 +418,7 @@ Please check corpus_ids input."
         pid = corpus_ids[idx]
         passage = corpus[idx]
         # logger.info("\n\n" + f"                     {idx} - {pid} ".center(150, "#") + "\n\n")
-        logger.info(self.create_header(f"{idx} - {pid}"))
+        logger.info(create_header(f"{idx} - {pid}"))
         logger.info("")
         
         similarity_cutoff = cos_sim_cutoff

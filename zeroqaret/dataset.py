@@ -8,15 +8,21 @@ from loguru import logger
 import os
 from pathlib import Path
 from fastcore.basics import patch_to, patch
+from fastcore.utils import  *
 
 from beir.datasets.data_loader import GenericDataLoader
 from beir import util
+
+from .helper import write_file
 
 import csv
 from tqdm import tqdm
 
 from typing import Union, List, Tuple
 import re
+
+import pandas as pd
+import ujson
 
 # %% ../nbs/01_dataset.ipynb 7
 udapdr_list = ['arguana', 'webis-touche2020', 'trec-covid', 'nfcorpus', 'hotpotqa', 'dbpedia-entity', 'climate-fever', 'fever', 'scifact', 'scidocs',  'fiqa']
@@ -113,3 +119,55 @@ def convert_for_colbert(self,
 @patch_to(BEIRDataset)
 def preprocess(self, text):
     return text.replace("\r", " ").replace("\t", " ").replace("\n", " ")
+
+# %% ../nbs/01_dataset.ipynb 13
+@patch_to(BEIRDataset)
+def prepare_qg_for_colbert_training(self,
+                                 csv_path: str, # path to CSV training file (containing pid, passage, question, title columns)
+                                ) -> (str, str, str):
+    """
+    Converting and preparing the dataframe loaded from `csv_path` (containing at least 'pid', 'passage' and 'question' columns) for training.
+    This will create the following:
+        - collection.tsv: TSV containing "pid \t passage text"
+        - queries.tsv: TSV containing "generated qid \t title - query"
+        - triples.jsonl: jsonl contianing [qid, pid+, pid-] list per line
+
+    Returns tuple of:
+        - Path to triples.jsonl
+        - Path to queries.tsv
+        - Path to collection.tsv
+    """
+        
+    # this is the path to save the files
+    save_path = Path(csv_path).parent / "colbert_training"
+    # make directory if it does not exist
+    save_path.mkdir(exist_ok=True)
+
+    assert not os.listdir(save_path), f"'{save_path}' is not empty! Please ensure that the folder is backed up and cleared before proceeding!"
+    
+    logger.info(f"Creating ColBERT training files from {save_path}...")
+    
+    # read csv as dataframe
+    train_df = pd.read_csv(csv_path)
+
+    # read csv as dataframe
+    train_df = pd.read_csv(csv_path)
+
+    # generate qid as {index}_qid
+    train_df["qid"] = train_df.index.astype("str") + "_qid"
+
+    # query as a combination of {title} - {question} 
+    train_df["query"] = train_df["title"].astype(str) + " - " + train_df["question"].astype(str)
+
+    # create a shuffled pids for negative sampling
+    shuffled_pids = train_df.sample(len(train_df))["pid"]
+
+    # create collection.tsv, queries.tsv and triples.jsonl from train_df
+    for pid, pid_n, passage, qid, query in tqdm(zip(train_df["pid"], shuffled_pids, train_df["passage"], train_df["qid"], train_df["query"]), desc="Training files: "):
+        write_file(f"{save_path}/triples.jsonl", ujson.dumps([qid, str(pid), str(pid_n)])  + '\n')
+        write_file(f"{save_path}/queries.tsv", f"{qid} \t {query} \n")
+        write_file(f"{save_path}/collection.tsv", f"{pid} \t {passage} \n")
+
+    logger.info(f"triples.jsonl, queries,tsv and collection.tsv files created in {save_path}.")
+
+    return (f"{save_path}/triples.jsonl", f"{save_path}/queries.tsv", f"{save_path}/collection.tsv")
